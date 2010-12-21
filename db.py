@@ -102,3 +102,4 @@ class DBCursor():
     @property
     def description(self):
         return self.cursor.description
+
