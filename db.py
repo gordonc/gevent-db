@@ -104,11 +104,40 @@ class DBCursor():
         return self.cursor.description
 
 import unittest
+import time
 
 class TestDBPool(unittest.TestCase):
-    def test(self):
+    def percentile(self,timings,percent):
+        idx = int((len(timings)-1) * percent)
+        return timings[idx]
+
+    def test_benchmark(self):
+        requests = 1000
+        concurrency = 10 
+        sql = 'SELECT 1'
+        
+        timings = []
+        def timer(pool,sql):
+            conn = pool.get()
+            t0 = time.time()
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            timings.append(time.time()-t0)
+        
         pool = DBPool(':memory:',4,'sqlite3')
-        conn = pool.get()
+        
+        greenlets = []
+        for i in xrange(requests):
+            greenlets.append(gevent.spawn(timer,pool,sql))
+        
+        for g in greenlets:
+            g.join()
+
+        print '66%% %f' % self.percentile(timings,0.66)
+        print '90%% %f' % self.percentile(timings,0.90)
+        print '99%% %f' % self.percentile(timings,0.99)
+        print '99.9%% %f' % self.percentile(timings,0.999)
+        print '100%% %f' % self.percentile(timings,1.00)
 
 if __name__ == '__main__':
     unittest.main()

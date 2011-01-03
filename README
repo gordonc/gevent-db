@@ -13,32 +13,5 @@ The connection destructor releases the connection back to the pool when the conn
 
 conn = pool.get()
 
-example: database benchmarking
-
-requests = 1000
-concurrency = 10 
-sql = 'SELECT SYSDATE FROM dual'
-
-timings = []
-def timer(pool,sql):
-    conn = pool.get()
-    t0 = time.time()
-    cursor = conn.cursor()
-    cursor.execute(sql)
-    timings.append(time.time()-t0)
-
-pool = db.DBPool('DSN=test',concurrency)
-
-greenlets = []
-for i in xrange(requests):
-    greenlets.append(gevent.spawn(timer,pool,sql))
-
-for g in greenlets():
-    g.wait()
-
-print '66%% %f' % percentile(timings,0.66)
-print '90%% %f' % percentile(timings,0.90)
-print '99%% %f' % percentile(timings,0.99)
-print '99.9%% %f' % percentile(timings,0.999)
-print '100%% %f' % percentile(timings,1.00)
+see examples in db.py testcases
 
