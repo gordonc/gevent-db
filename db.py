@@ -124,7 +124,7 @@ class TestDBPool(unittest.TestCase):
             cursor.execute(sql)
             timings.append(time.time()-t0)
         
-        pool = DBPool(':memory:',4,'sqlite3')
+        pool = DBPool(':memory:',concurrency,'sqlite3')
         
         greenlets = []
         for i in xrange(requests):
