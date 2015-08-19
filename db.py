@@ -14,14 +14,14 @@ import threading
 import logging
 
 class DBPool():
-    def __init__(self,connectionstring,poolsize,modulename='pyodbc'):
+    def __init__(self,modulename,poolsize,connectparams):
         self.conns = [DBConnection_(socket_.socketpair()) for x in xrange(poolsize)]
         self.threads = [threading.Thread(target=self.worker, args=(self.conns[x],)) for x in xrange(poolsize)]
         self.queue = queue.Queue(poolsize)
         for i in xrange(poolsize):
             self.threads[i].daemon = True
             self.threads[i].start()
-            self.conns[i].connect(connectionstring,modulename)
+            self.conns[i].connect(modulename,connectparams)
             self.queue.put(self.conns[i])
 
     def worker(self,conn):
@@ -49,8 +49,8 @@ class DBConnection_():
         self.pipe = pipe
         self.state = self.State()
 
-    def connect(self,connectionstring,modulename):
-        self.conn = self.apply(__import__(modulename).connect,connectionstring)
+    def connect(self,modulename,connectparams):
+        self.conn = self.apply(__import__(modulename).connect,connectparams)
 
     def __del__():
         self.conn.close()
@@ -87,8 +87,17 @@ class DBCursor():
         self.conn = conn
         self.cursor = cursor
 
+    def __iter__(self,*args):
+        return self.conn.apply(self.cursor.__iter__,*args)
+
     def execute(self,*args):
         return self.conn.apply(self.cursor.execute,*args)
+
+    def executemany(self,*args):
+        return self.conn.apply(self.cursor.executemany,*args)
+
+    def next(self,*args):
+        return self.conn.apply(self.cursor.next,*args)
 
     def fetchone(self,*args):
         return self.conn.apply(self.cursor.fetchone,*args)
@@ -124,7 +133,7 @@ class TestDBPool(unittest.TestCase):
             cursor.execute(sql)
             timings.append(time.time()-t0)
         
-        pool = DBPool(':memory:',concurrency,'sqlite3')
+        pool = DBPool('sqlite3',concurrency,':memory:')
         
         greenlets = []
         for i in xrange(requests):
